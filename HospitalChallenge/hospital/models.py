@@ -85,7 +85,7 @@ class Patient(models.Model):
         person(Person): related person object of worker
         department(Department): related department in hospital
     """
-    person = models.ForeignKey(Person, related_name='patient_data', null=True)
+    person = models.ForeignKey(Person, related_name='patient_data')
     department = models.ForeignKey(Department, related_name='patients')
 
 
