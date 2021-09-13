@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 
 from django.db import models
 
-MALE  = 'M'
-FEMALE = 'F'
-OTHER = 'O'
+MALE  = 'Male'
+FEMALE = 'Female'
+OTHER = 'Other'
 GENDER_CHOICES = [(MALE,'Male'),
                     (FEMALE,'Female'),
                     (OTHER,'Other')]
@@ -19,8 +19,9 @@ class Hospital(models.Model):
         city(str): city (location) of hospital
     """
 
-    name = models.CharField(max_length=NAME_LENGTH)
-    city = models.CharField(max_length=CITY_LENGTH)
+    name = models.CharField(max_length=NAME_LENGTH, null=False, blank=False,
+                            db_index= True)
+    city = models.CharField(max_length=CITY_LENGTH, null=False, blank=False)
 
     def __str__(self):
         """Return name of hospital"""
@@ -33,8 +34,30 @@ class Department(models.Model):
         hospital(Hospital): related hospital object
     """
     
-    name = models.CharField(max_length=NAME_LENGTH)
-    hospital = models.ForeignKey(Hospital)
+    name = models.CharField(max_length=NAME_LENGTH, null=False, blank=False, 
+                            db_index=True)
+    hospital = models.ForeignKey(Hospital, related_name='departments')
+
+    def __str__(self):
+        return self.name
+
+
+class Person(models.Model):
+    """ Person in hospital
+        name(str): name of worker
+        age(int): age of worker
+        gender(str): gender of worker
+    """
+    DOCTOR = 'D'
+    NURSE = 'N'
+    POSITION = [(NURSE, 'Nurse'), 
+                  (DOCTOR, 'Doctor')]
+    POSITION_LENGTH = 6
+    name = models.CharField(max_length=NAME_LENGTH, null=False, blank=False,
+                            db_index=True)
+    age = models.PositiveSmallIntegerField()
+    gender = models.CharField(choices=GENDER_CHOICES, default=OTHER,
+                              max_length=GENDER_LENGTH, null=False, blank=False)
 
     def __str__(self):
         return self.name
@@ -42,66 +65,53 @@ class Department(models.Model):
 
 class Worker(models.Model):
     """ Worker of hospital model
-        name(str): name of worker
-        age(int): age of worker
-        gender(str): gender of worker
+        person(Person): related person object of worker
         position(str): role of worker in hospital
         department(Department): related department(s) in hospital
     """
-    DOCTOR = 'D'
-    NURSE = 'N'
+    DOCTOR = 'Doctor'
+    NURSE = 'Nurse'
     POSITION = [(NURSE, 'Nurse'), 
                   (DOCTOR, 'Doctor')]
     POSITION_LENGTH = 6
-    name = models.CharField(max_length=NAME_LENGTH)
-    age = models.IntegerField()
-    gender = models.CharField(choices=GENDER_CHOICES, default=OTHER,
-                              max_length=GENDER_LENGTH)
-    position = models.CharField(choices=POSITION, max_length=6)
-    department = models.ManyToManyField(Department)
-
-    def __str__(self):
-        return self.name
-
+    person = models.ForeignKey(Person, related_name='jobs')
+    position = models.CharField(choices=POSITION, max_length=6,
+                                null=False, blank=False)
+    department = models.ForeignKey(Department, related_name='workers')
+  
 
 class Patient(models.Model):
     """ Patient of hospital model
-        name(str): name of patient
-        age(int): age of patient
-        gender(str): gender of patient
+        person(Person): related person object of worker
         department(Department): related department in hospital
     """
-    name = models.CharField(max_length=NAME_LENGTH)
-    age = models.IntegerField()
-    gender = models.CharField(choices=GENDER_CHOICES, default=OTHER,
-                              max_length=GENDER_LENGTH)
-    department = models.ForeignKey(Department)
-
-    def __str__(self):
-        return self.name
+    person = models.ForeignKey(Person, related_name='patient_data', null=True)
+    department = models.ForeignKey(Department, related_name='patients')
 
 
-class ExamineResult(models.Model):
+
+class ExaminationResult(models.Model):
     """ Examine result model
         examine_time(datetime): examine time
         result(str): result of examination
         worker(Worker): related worker that examine patient
         patient(Patient): related patient that was examined
     """
-    HEALTHY = 'H'
-    CORONA = 'C'
-    BOTISM = 'B'
-    DEAD = 'D'
+    HEALTHY = 'Healthy'
+    CORONA = 'Corona'
+    BOTISM = 'Botism'
+    DEAD = 'Dead'
     RESULTS = [(HEALTHY, 'Healthy'),
                (CORONA, 'Corona'),
                (BOTISM, 'Botism'),
                (DEAD, 'Dead')]
     RESULT_LENGTH = 7
-    examine_time = models.DateTimeField()
-    result = models.CharField(choices=RESULTS, default=BOTISM, max_length=7)
-    worker = models.ForeignKey(Worker)
-    patient = models.ForeignKey(Patient)
+    examination_time = models.DateTimeField(auto_now_add=True)
+    result = models.CharField(choices=RESULTS, default=BOTISM, max_length=7,
+                              null=False, blank=False)
+    worker = models.ForeignKey(Worker, related_name='examinations')
+    patient = models.ForeignKey(Patient, related_name='examinations')
 
 
     def __str__(self):
-        return self.examine_time.__str__()
+        return str(self.examine_time)
